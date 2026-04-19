@@ -9,7 +9,7 @@
 
 import { tokenManager } from './tokenManager';
 
-export const API_BASE_URL = 'http://192.168.1.151:8000/api/v1';
+export const API_BASE_URL = 'http://localhost:8000';
 
 // ── Core fetch wrapper ───────────────────────────────────────────────────────
 
@@ -203,6 +203,7 @@ export const reviewsApi = {
     targetName: string;
     rating: number;
     comment?: string;
+    anonymous?: boolean;
   }) =>
     request<any>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
 

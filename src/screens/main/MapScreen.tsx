@@ -21,6 +21,7 @@ import { Building, RoutePreference } from '../../types';
 import { mapsApi } from '../../services/api';
 import { useColors, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
 import { useTranslation } from '../../i18n';
+import { useAuthStore } from '../../stores/authStore';
 
 // NU campus center (Astana, Kazakhstan)
 const CAMPUS_REGION = {
@@ -48,6 +49,8 @@ export function MapScreen() {
   const [routePreference, setRoutePreference] = useState<RoutePreference>('shortest');
   const t = useTranslation();
 
+  const shareLocation = useAuthStore((state) => state.settings.privacy.shareLocation);
+
   const ROUTE_PREFERENCES: { key: RoutePreference; label: string; icon: string }[] = [
     { key: 'shortest', label: t.navigate.shortest, icon: 'flash-outline' },
     { key: 'accessible', label: t.navigate.accessible, icon: 'accessibility-outline' },
@@ -63,13 +66,15 @@ export function MapScreen() {
     mapsApi.getBuildings()
       .then((res) => setBuildings(res.data ?? []))
       .catch(console.error);
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-    })();
-  }, []);
+    if (shareLocation) {
+      (async () => {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') return;
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+      })();
+    }
+  }, [shareLocation]);
 
   const goToMyLocation = () => {
     if (userLocation) {
@@ -106,7 +111,7 @@ export function MapScreen() {
         style={styles.map}
         provider={PROVIDER_DEFAULT}
         initialRegion={CAMPUS_REGION}
-        showsUserLocation
+        showsUserLocation={shareLocation}
         showsMyLocationButton={false}
       >
         {buildings.map((building) => (
@@ -145,13 +150,15 @@ export function MapScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity
-            style={styles.locationBtn}
-            onPress={goToMyLocation}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="locate" size={20} color={COLORS.primary} />
-          </TouchableOpacity>
+          {shareLocation && (
+            <TouchableOpacity
+              style={styles.locationBtn}
+              onPress={goToMyLocation}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="locate" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       </SafeAreaView>
 
